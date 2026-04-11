@@ -5,23 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Midnight Cravings: Spice Elite</title>
     <style>
+        /* Ensures the game takes up the full screen and stays centered */
         body { margin: 0; background: #000; color: #ff4500; font-family: 'Courier New', Courier, monospace; overflow: hidden; position: fixed; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; touch-action: none; }
-        canvas { border: 3px solid #ff4500; background: #050505; max-width: 100vw; max-height: 100vh; }
-        #ui { position: absolute; top: 15px; left: 15px; pointer-events: none; z-index: 10; }
-        .stat { font-size: 16px; margin-bottom: 5px; font-weight: bold; color: #ff8c00; text-shadow: 0 0 5px #000; }
-        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 20; padding: 20px; box-sizing: border-box; }
-        h1 { color: #ff4500; font-size: 2.5rem; margin: 0; text-shadow: 0 0 20px #ff4500; }
-        button { background: #ff4500; border: none; padding: 15px 35px; font-size: 20px; cursor: pointer; color: white; font-family: inherit; font-weight: bold; margin-top: 20px; border-radius: 8px; box-shadow: 0 5px 0 #900; }
-        input { padding: 12px; width: 280px; margin-top: 15px; border: 1px solid #ff4500; background: #111; color: white; text-align: center; font-size: 16px; }
-        #joystick-container { position: absolute; width: 100px; height: 100px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,69,0,0.3); z-index: 15; pointer-events: none; visibility: hidden; }
-        #joystick-knob { position: absolute; width: 40px; height: 40px; background: #ff4500; border-radius: 50%; top: 30px; left: 30px; box-shadow: 0 0 15px #ff4500; }
+        
+        canvas { border: 2px solid #ff4500; background: #050505; max-width: 95vw; max-height: 80vh; display: block; }
+
+        #ui { position: absolute; top: 10px; left: 15px; pointer-events: none; z-index: 50; }
+        .stat { font-size: 14px; font-weight: bold; color: #ff8c00; text-shadow: 0 0 5px #000; }
+
+        /* FIXED OVERLAY FOR MOBILE */
+        #overlay { 
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.95); 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            text-align: center; z-index: 100; padding: 15px; box-sizing: border-box; 
+        }
+
+        h1 { color: #ff4500; font-size: 1.8rem; margin: 0; text-shadow: 0 0 15px #ff4500; }
+        p { font-size: 0.9rem; color: #eee; margin: 10px 0; }
+        
+        button { background: #ff4500; border: none; padding: 12px 25px; font-size: 18px; cursor: pointer; color: white; font-family: inherit; font-weight: bold; margin-top: 15px; border-radius: 8px; }
+        
+        input { padding: 12px; width: 85%; max-width: 300px; margin-top: 10px; border: 1px solid #ff4500; background: #111; color: white; text-align: center; font-size: 16px; }
+
+        /* Joystick Styles */
+        #joystick-container { position: absolute; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,69,0,0.3); z-index: 10; pointer-events: none; visibility: hidden; }
+        #joystick-knob { position: absolute; width: 35px; height: 35px; background: #ff4500; border-radius: 50%; top: 22.5px; left: 22.5px; box-shadow: 0 0 10px #ff4500; }
     </style>
 </head>
 <body>
 
     <div id="ui">
-        <div class="stat">HUNGER: <span id="hunger">100</span>%</div>
-        <div class="stat">TIME: <span id="timer">0</span>s</div>
+        <div class="stat">HUNGER: <span id="hunger">100</span>% | TIME: <span id="timer">0</span>s</div>
     </div>
 
     <canvas id="gameCanvas"></canvas>
@@ -30,15 +45,15 @@
     <div id="overlay">
         <div id="startScreen">
             <h1>MIDNIGHT CRAVINGS</h1>
-            <p style="color: #eee; margin-top:10px;">Reach the <b>NEON FOOD TRUCK</b>.<br>Avoid zombies & spiked borders.</p>
+            <p>Reach the <b>NEON TRUCK</b> to win.<br>Avoid zombies & spikes!</p>
             <button onclick="startGame()">START RITUAL</button>
         </div>
         <div id="endScreen" style="display:none;">
-            <h1 style="color: #32cd32;">SPICE ELITE REACHED</h1>
-            <p style="color: #fff;">You made it in <span id="finalTime"></span>s!</p>
-            <p style="color: #ff8c00;">Enter your email for your BOGO Samosa coupon.</p>
-            <input type="email" id="email" placeholder="BYUH Email Address"><br>
-            <button onclick="submitLead()">CLAIM REWARD</button>
+            <h1 style="color: #32cd32;">SPICE ELITE!</h1>
+            <p>You survived in <span id="finalTime"></span>s.</p>
+            <p style="color: #ff8c00; font-weight: bold;">Enter email for BOGO Samosa:</p>
+            <input type="email" id="email" placeholder="BYUH Email" required><br>
+            <button onclick="submitLead()">CLAIM COUPON</button>
         </div>
     </div>
 
@@ -47,34 +62,41 @@
         const ctx = canvas.getContext('2d');
         const joystick = document.getElementById('joystick-container');
         const knob = document.getElementById('joystick-knob');
+        
+        // Fixed internal resolution for consistent gameplay
         canvas.width = 800; canvas.height = 550;
 
-        let player = { x: 80, y: 275, size: 8, speed: 7 };
+        let player = { x: 80, y: 275, size: 8, speed: 7.5 };
         let goal = { x: 740, y: 275, size: 55 };
         let zombies = [], items = [], keys = {}, gameActive = false, won = false;
         let hunger = 100, startTime, moveX = 0, moveY = 0, isTouching = false;
+        let startX, startY;
 
         window.addEventListener('keydown', e => keys[e.code] = true);
         window.addEventListener('keyup', e => keys[e.code] = false);
+
         window.addEventListener('touchstart', e => {
-            if(!gameActive) return;
+            if(!gameActive || won) return;
             isTouching = true; joystick.style.visibility = 'visible';
-            const t = e.touches[0]; joystick.style.left = (t.clientX - 50) + 'px'; joystick.style.top = (t.clientY - 50) + 'px';
+            const t = e.touches[0]; joystick.style.left = (t.clientX - 40) + 'px'; joystick.style.top = (t.clientY - 40) + 'px';
             startX = t.clientX; startY = t.clientY;
-        });
+        }, {passive: false});
+
         window.addEventListener('touchmove', e => {
             if (!isTouching) return;
             const t = e.touches[0]; let dx = t.clientX - startX, dy = t.clientY - startY;
-            let dist = Math.min(50, Math.hypot(dx, dy)); let angle = Math.atan2(dy, dx);
-            moveX = Math.cos(angle) * (dist / 50); moveY = Math.sin(angle) * (dist / 50);
-            knob.style.transform = `translate(${moveX * 30}px, ${moveY * 30}px)`;
-        });
+            let dist = Math.min(40, Math.hypot(dx, dy)); let angle = Math.atan2(dy, dx);
+            moveX = Math.cos(angle) * (dist / 40); moveY = Math.sin(angle) * (dist / 40);
+            knob.style.transform = `translate(${moveX * 25}px, ${moveY * 25}px)`;
+            e.preventDefault();
+        }, {passive: false});
+
         window.addEventListener('touchend', () => { isTouching = false; moveX = 0; moveY = 0; joystick.style.visibility = 'hidden'; });
 
         function startGame() {
-            document.getElementById('overlay').style.display = 'none';
             document.getElementById('startScreen').style.display = 'block';
             document.getElementById('endScreen').style.display = 'none';
+            document.getElementById('overlay').style.display = 'none';
             gameActive = true; won = false; hunger = 100; zombies = []; items = [];
             player.x = 80; player.y = 275; startTime = Date.now();
             for(let i=0; i<18; i++) zombies.push({ x: 250+Math.random()*450, y: 50+Math.random()*450, vx: (Math.random()-0.5)*7, vy: (Math.random()-0.5)*7, type: Math.random() > 0.5 ? '🍕' : '🥪' });
@@ -85,7 +107,6 @@
         function update() {
             if(!gameActive || won) return;
 
-            // Movement
             if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
             if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
             if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
@@ -96,12 +117,10 @@
             document.getElementById('hunger').innerText = Math.floor(hunger);
             document.getElementById('timer').innerText = Math.floor((Date.now() - startTime) / 1000);
 
-            // Win Condition (CHECK THIS FIRST)
             if(Math.hypot(player.x - goal.x, player.y - goal.y) < 45) { win(); return; }
-
-            // Death Conditions
             if (player.x < 15 || player.x > 785 || player.y < 15 || player.y > 535) return gameOver("SPIKED!");
             if (hunger <= 0) return gameOver("STARVED!");
+            
             for(let z of zombies) {
                 z.x += z.vx; z.y += z.vy;
                 if(z.x < 20 || z.x > 780) z.vx *= -1; if(z.y < 20 || z.y > 530) z.vy *= -1;
@@ -120,7 +139,7 @@
 
         function draw() {
             ctx.fillStyle = "#000"; ctx.fillRect(0,0,800,550);
-            ctx.fillStyle = "#500"; // Spikes
+            ctx.fillStyle = "#500"; 
             for(let i=0; i<800; i+=20) {
                 ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+10,12); ctx.lineTo(i+20,0); ctx.fill();
                 ctx.beginPath(); ctx.moveTo(i,550); ctx.lineTo(i+10,538); ctx.lineTo(i+20,550); ctx.fill();
@@ -145,11 +164,9 @@
         function submitLead() {
             const email = document.getElementById('email').value;
             if(email.includes('@')) {
-                alert("SUCCESS! You're on the list.");
+                alert("SUCCESS! You're a Spice Elite member.");
                 location.reload();
-            } else {
-                alert("Please enter a valid BYUH email.");
-            }
+            } else { alert("Enter a valid email!"); }
         }
     </script>
 </body>
