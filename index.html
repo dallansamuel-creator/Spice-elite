@@ -3,170 +3,103 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Midnight Cravings: Spice Elite</title>
+    <title>Midnight Cravings</title>
     <style>
-        /* Ensures the game takes up the full screen and stays centered */
-        body { margin: 0; background: #000; color: #ff4500; font-family: 'Courier New', Courier, monospace; overflow: hidden; position: fixed; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; touch-action: none; }
-        
-        canvas { border: 2px solid #ff4500; background: #050505; max-width: 95vw; max-height: 80vh; display: block; }
-
-        #ui { position: absolute; top: 10px; left: 15px; pointer-events: none; z-index: 50; }
-        .stat { font-size: 14px; font-weight: bold; color: #ff8c00; text-shadow: 0 0 5px #000; }
-
-        /* FIXED OVERLAY FOR MOBILE */
-        #overlay { 
-            position: absolute; top: 0; left: 0; width: 100%; height: 100%; 
-            background: rgba(0,0,0,0.95); 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            text-align: center; z-index: 100; padding: 15px; box-sizing: border-box; 
-        }
-
-        h1 { color: #ff4500; font-size: 1.8rem; margin: 0; text-shadow: 0 0 15px #ff4500; }
-        p { font-size: 0.9rem; color: #eee; margin: 10px 0; }
-        
-        button { background: #ff4500; border: none; padding: 12px 25px; font-size: 18px; cursor: pointer; color: white; font-family: inherit; font-weight: bold; margin-top: 15px; border-radius: 8px; }
-        
-        input { padding: 12px; width: 85%; max-width: 300px; margin-top: 10px; border: 1px solid #ff4500; background: #111; color: white; text-align: center; font-size: 16px; }
-
-        /* Joystick Styles */
-        #joystick-container { position: absolute; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 2px solid rgba(255,69,0,0.3); z-index: 10; pointer-events: none; visibility: hidden; }
-        #joystick-knob { position: absolute; width: 35px; height: 35px; background: #ff4500; border-radius: 50%; top: 22.5px; left: 22.5px; box-shadow: 0 0 10px #ff4500; }
+        body { margin: 0; background: #000; color: #ff4500; font-family: sans-serif; overflow: hidden; position: fixed; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; touch-action: none; }
+        canvas { border: 2px solid #ff4500; background: #050505; max-width: 98vw; max-height: 85vh; }
+        #overlay { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; z-index: 100; color: white; padding: 20px; box-sizing: border-box; }
+        button { background: #ff4500; border: none; padding: 15px 30px; font-size: 20px; color: white; font-weight: bold; border-radius: 8px; margin-top: 20px; }
+        input { padding: 12px; width: 80%; max-width: 300px; margin-top: 10px; border: 1px solid #ff4500; background: #111; color: white; text-align: center; }
+        #joystick { position: absolute; width: 80px; height: 80px; background: rgba(255,255,255,0.1); border-radius: 50%; border: 1px solid #ff4500; visibility: hidden; z-index: 10; }
+        #knob { position: absolute; width: 30px; height: 30px; background: #ff4500; border-radius: 50%; top: 25px; left: 25px; }
     </style>
 </head>
 <body>
 
-    <div id="ui">
-        <div class="stat">HUNGER: <span id="hunger">100</span>% | TIME: <span id="timer">0</span>s</div>
-    </div>
-
-    <canvas id="gameCanvas"></canvas>
-    <div id="joystick-container"><div id="joystick-knob"></div></div>
+    <canvas id="g"></canvas>
+    <div id="joystick"><div id="knob"></div></div>
 
     <div id="overlay">
-        <div id="startScreen">
+        <div id="s1">
             <h1>MIDNIGHT CRAVINGS</h1>
-            <p>Reach the <b>NEON TRUCK</b> to win.<br>Avoid zombies & spikes!</p>
-            <button onclick="startGame()">START RITUAL</button>
+            <p>Dodge the bland food. Reach the truck.</p>
+            <button onclick="start()">START GAME</button>
         </div>
-        <div id="endScreen" style="display:none;">
-            <h1 style="color: #32cd32;">SPICE ELITE!</h1>
-            <p>You survived in <span id="finalTime"></span>s.</p>
-            <p style="color: #ff8c00; font-weight: bold;">Enter email for BOGO Samosa:</p>
-            <input type="email" id="email" placeholder="BYUH Email" required><br>
-            <button onclick="submitLead()">CLAIM COUPON</button>
+        <div id="s2" style="display:none;">
+            <h1 style="color: #0f0;">YOU WON!</h1>
+            <p>Enter email for BOGO Samosas:</p>
+            <input type="email" id="email" placeholder="BYUH Email">
+            <button id="btn" onclick="send()">CLAIM COUPON</button>
         </div>
     </div>
 
     <script>
-        const canvas = document.getElementById('gameCanvas');
+        const canvas = document.getElementById('g');
         const ctx = canvas.getContext('2d');
-        const joystick = document.getElementById('joystick-container');
-        const knob = document.getElementById('joystick-knob');
-        
-        // Fixed internal resolution for consistent gameplay
-        canvas.width = 800; canvas.height = 550;
+        const joy = document.getElementById('joystick');
+        const knob = document.getElementById('knob');
+        canvas.width = 800; canvas.height = 500;
 
-        let player = { x: 80, y: 275, size: 8, speed: 7.5 };
-        let goal = { x: 740, y: 275, size: 55 };
-        let zombies = [], items = [], keys = {}, gameActive = false, won = false;
-        let hunger = 100, startTime, moveX = 0, moveY = 0, isTouching = false;
-        let startX, startY;
+        let p = {x:50, y:250, r:10}, goal = {x:750, y:250, r:40}, enemies = [], active = false, won = false;
+        let mvX = 0, mvY = 0, startX, startY, keys = {};
 
         window.addEventListener('keydown', e => keys[e.code] = true);
         window.addEventListener('keyup', e => keys[e.code] = false);
-
         window.addEventListener('touchstart', e => {
-            if(!gameActive || won) return;
-            isTouching = true; joystick.style.visibility = 'visible';
-            const t = e.touches[0]; joystick.style.left = (t.clientX - 40) + 'px'; joystick.style.top = (t.clientY - 40) + 'px';
-            startX = t.clientX; startY = t.clientY;
-        }, {passive: false});
-
+            if(!active) return;
+            const t = e.touches[0]; startX = t.clientX; startY = t.clientY;
+            joy.style.left = (startX - 40)+'px'; joy.style.top = (startY - 40)+'px';
+            joy.style.visibility = 'visible';
+        });
         window.addEventListener('touchmove', e => {
-            if (!isTouching) return;
             const t = e.touches[0]; let dx = t.clientX - startX, dy = t.clientY - startY;
-            let dist = Math.min(40, Math.hypot(dx, dy)); let angle = Math.atan2(dy, dx);
-            moveX = Math.cos(angle) * (dist / 40); moveY = Math.sin(angle) * (dist / 40);
-            knob.style.transform = `translate(${moveX * 25}px, ${moveY * 25}px)`;
-            e.preventDefault();
-        }, {passive: false});
+            let d = Math.min(40, Math.hypot(dx, dy)); let ang = Math.atan2(dy, dx);
+            mvX = Math.cos(ang) * (d/40); mvY = Math.sin(ang) * (d/40);
+            knob.style.transform = `translate(${mvX * 20}px, ${mvY * 20}px)`;
+        });
+        window.addEventListener('touchend', () => { joy.style.visibility = 'hidden'; mvX = 0; mvY = 0; });
 
-        window.addEventListener('touchend', () => { isTouching = false; moveX = 0; moveY = 0; joystick.style.visibility = 'hidden'; });
-
-        function startGame() {
-            document.getElementById('startScreen').style.display = 'block';
-            document.getElementById('endScreen').style.display = 'none';
+        function start() {
             document.getElementById('overlay').style.display = 'none';
-            gameActive = true; won = false; hunger = 100; zombies = []; items = [];
-            player.x = 80; player.y = 275; startTime = Date.now();
-            for(let i=0; i<18; i++) zombies.push({ x: 250+Math.random()*450, y: 50+Math.random()*450, vx: (Math.random()-0.5)*7, vy: (Math.random()-0.5)*7, type: Math.random() > 0.5 ? '🍕' : '🥪' });
-            for(let i=0; i<6; i++) items.push({ x: 150+Math.random()*600, y: 50+Math.random()*450, type: Math.random() > 0.5 ? 'CURRY' : 'LASSI' });
-            requestAnimationFrame(update);
+            active = true; won = false; p.x = 50; p.y = 250; enemies = [];
+            for(let i=0; i<15; i++) enemies.push({x: 200+Math.random()*500, y: Math.random()*500, vx: (Math.random()-0.5)*6, vy: (Math.random()-0.5)*6, t: Math.random()>0.5?'🍕':'🥪'});
+            loop();
         }
 
-        function update() {
-            if(!gameActive || won) return;
+        function loop() {
+            if(!active || won) return;
+            if(keys.ArrowUp || keys.KeyW) p.y -= 5; if(keys.ArrowDown || keys.KeyS) p.y += 5;
+            if(keys.ArrowLeft || keys.KeyA) p.x -= 5; if(keys.ArrowRight || keys.KeyD) p.x += 5;
+            p.x += mvX * 6; p.y += mvY * 6;
 
-            if (keys['ArrowUp'] || keys['KeyW']) player.y -= player.speed;
-            if (keys['ArrowDown'] || keys['KeyS']) player.y += player.speed;
-            if (keys['ArrowLeft'] || keys['KeyA']) player.x -= player.speed;
-            if (keys['ArrowRight'] || keys['KeyD']) player.x += player.speed;
-            player.x += moveX * player.speed; player.y += moveY * player.speed;
+            if(p.x<0 || p.x>800 || p.y<0 || p.y>500) die("STAY IN BOUNDS!");
+            if(Math.hypot(p.x - goal.x, p.y - goal.y) < 40) { win(); return; }
 
-            hunger -= 0.12;
-            document.getElementById('hunger').innerText = Math.floor(hunger);
-            document.getElementById('timer').innerText = Math.floor((Date.now() - startTime) / 1000);
-
-            if(Math.hypot(player.x - goal.x, player.y - goal.y) < 45) { win(); return; }
-            if (player.x < 15 || player.x > 785 || player.y < 15 || player.y > 535) return gameOver("SPIKED!");
-            if (hunger <= 0) return gameOver("STARVED!");
-            
-            for(let z of zombies) {
-                z.x += z.vx; z.y += z.vy;
-                if(z.x < 20 || z.x > 780) z.vx *= -1; if(z.y < 20 || z.y > 530) z.vy *= -1;
-                if(Math.hypot(player.x - z.x, player.y - z.y) < 22) return gameOver("ELIMINATED!");
-            }
-
-            items.forEach((it, i) => {
-                if(Math.hypot(player.x - it.x, player.y - it.y) < 20) {
-                    if(it.type === 'CURRY') player.speed += 0.8; else hunger = Math.min(100, hunger + 25);
-                    items.splice(i, 1);
-                }
+            enemies.forEach(e => {
+                e.x += e.vx; e.y += e.vy;
+                if(e.x<0 || e.x>800) e.vx *= -1; if(e.y<0 || e.y>500) e.vy *= -1;
+                if(Math.hypot(p.x - e.x, p.y - e.y) < 20) die("ZOMBIED!");
             });
 
-            draw(); requestAnimationFrame(update);
+            ctx.fillStyle = "black"; ctx.fillRect(0,0,800,500);
+            ctx.fillStyle = "orange"; ctx.fillRect(goal.x-30, goal.y-30, 60, 60);
+            ctx.fillStyle = "cyan"; ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, 7); ctx.fill();
+            ctx.font = "20px Arial"; enemies.forEach(e => ctx.fillText(e.t, e.x-10, e.y+10));
+            requestAnimationFrame(loop);
         }
 
-        function draw() {
-            ctx.fillStyle = "#000"; ctx.fillRect(0,0,800,550);
-            ctx.fillStyle = "#500"; 
-            for(let i=0; i<800; i+=20) {
-                ctx.beginPath(); ctx.moveTo(i,0); ctx.lineTo(i+10,12); ctx.lineTo(i+20,0); ctx.fill();
-                ctx.beginPath(); ctx.moveTo(i,550); ctx.lineTo(i+10,538); ctx.lineTo(i+20,550); ctx.fill();
-            }
-            items.forEach(it => { ctx.fillStyle = it.type === 'CURRY' ? '#ff4500' : '#32cd32'; ctx.beginPath(); ctx.arc(it.x, it.y, 8, 0, Math.PI*2); ctx.fill(); });
-            ctx.font = '28px Arial'; zombies.forEach(z => ctx.fillText(z.type, z.x-14, z.y+10));
-            ctx.fillStyle = '#ff8c00'; ctx.shadowBlur = 20; ctx.shadowColor = '#ff8c00'; ctx.fillRect(goal.x-25, goal.y-25, 50, 50);
-            ctx.fillStyle = '#0ff'; ctx.shadowBlur = 15; ctx.shadowColor = '#0ff'; ctx.beginPath(); ctx.arc(player.x, player.y, 8, 0, Math.PI*2); ctx.fill();
-            ctx.shadowBlur = 0;
-        }
+        function die(m) { active = false; alert(m); location.reload(); }
+        function win() { won = true; active = false; document.getElementById('overlay').style.display = 'flex'; document.getElementById('s1').style.display = 'none'; document.getElementById('s2').style.display = 'block'; }
 
-        function gameOver(msg) { gameActive = false; alert(msg); location.reload(); }
-
-        function win() { 
-            won = true; gameActive = false;
-            document.getElementById('finalTime').innerText = Math.floor((Date.now() - startTime) / 1000);
-            document.getElementById('startScreen').style.display = 'none';
-            document.getElementById('endScreen').style.display = 'block';
-            document.getElementById('overlay').style.display = 'flex';
-        }
-
-        function submitLead(https://formspree.io/f/mojpgoqw) {
-            const email = document.getElementById('email').value;
-            if(email.includes('@')) {
-                alert("SUCCESS! You're a Spice Elite member.");
-                location.reload();
-            } else { alert("Enter a valid email!"); }
+        function send() {
+            const em = document.getElementById('email').value;
+            if(!em.includes('@')) return alert("Invalid email");
+            document.getElementById('btn').innerText = "SENDING...";
+            fetch("https://formspree.io/f/mojpgoqw", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email: em })
+            }).then(() => { alert("Welcome to the Elite!"); location.reload(); });
         }
     </script>
 </body>
